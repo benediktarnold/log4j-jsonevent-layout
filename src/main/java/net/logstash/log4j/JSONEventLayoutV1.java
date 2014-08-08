@@ -2,15 +2,19 @@ package net.logstash.log4j;
 
 import net.logstash.log4j.data.HostData;
 import net.minidev.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.FastDateFormat;
+
 import org.apache.log4j.Layout;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LocationInfo;
 import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.ThrowableInformation;
 
+import java.lang.reflect.Field;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -35,7 +39,7 @@ public class JSONEventLayoutV1 extends Layout {
     private JSONObject logstashEvent;
 
     public static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-    public static final FastDateFormat ISO_DATETIME_TIME_ZONE_FORMAT_WITH_MILLIS = FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", UTC);
+    public static DateFormat ISO_DATETIME_TIME_ZONE_FORMAT_WITH_MILLIS;
     public static final String ADDITIONAL_DATA_PROPERTY = "net.logstash.log4j.JSONEventLayoutV1.UserFields";
 
     public static String dateFormat(long timestamp) {
@@ -48,6 +52,9 @@ public class JSONEventLayoutV1 extends Layout {
      */
     public JSONEventLayoutV1() {
         this(true);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        format.setTimeZone(UTC);
+        ISO_DATETIME_TIME_ZONE_FORMAT_WITH_MILLIS = format;
     }
 
     /**
@@ -61,9 +68,27 @@ public class JSONEventLayoutV1 extends Layout {
 
     public String format(LoggingEvent loggingEvent) {
         threadName = loggingEvent.getThreadName();
-        timestamp = loggingEvent.getTimeStamp();
+        timestamp = loggingEvent.timeStamp;
         exceptionInformation = new HashMap<String, Object>();
-        mdc = loggingEvent.getProperties();
+        loggingEvent.getMDCCopy();
+        try {
+            Field mdcCopy = LoggingEvent.class.getDeclaredField("mdcCopy");
+            mdcCopy.setAccessible(true);
+            Hashtable<String, String> object = (Hashtable<String, String>) mdcCopy.get(loggingEvent);
+            mdc=object;
+        } catch (NoSuchFieldException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         ndc = loggingEvent.getNDC();
 
         logstashEvent = new JSONObject();
@@ -114,7 +139,7 @@ public class JSONEventLayoutV1 extends Layout {
                 exceptionInformation.put("exception_message", throwableInformation.getThrowable().getMessage());
             }
             if (throwableInformation.getThrowableStrRep() != null) {
-                String stackTrace = StringUtils.join(throwableInformation.getThrowableStrRep(), "\n");
+                String stackTrace = join(throwableInformation.getThrowableStrRep(), "\n");
                 exceptionInformation.put("stacktrace", stackTrace);
             }
             addEventData("exception", exceptionInformation);
@@ -137,7 +162,16 @@ public class JSONEventLayoutV1 extends Layout {
         return logstashEvent.toString() + "\n";
     }
 
-    public boolean ignoresThrowable() {
+    private String join(String[] throwableStrRep, String string) {
+    	StringBuilder builder = new StringBuilder();
+		for (String line : throwableStrRep) {
+			builder.append(line);
+			builder.append(string);
+		}
+		return builder.toString();
+	}
+
+	public boolean ignoresThrowable() {
         return ignoreThrowable;
     }
 

@@ -3,9 +3,11 @@ package net.logstash.log4j;
 import junit.framework.Assert;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
+
 import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.MDC;
 import org.apache.log4j.NDC;
 import org.junit.After;
 import org.junit.Before;
@@ -154,6 +156,18 @@ public class JSONEventLayoutV1Test {
         JSONObject jsonObject = (JSONObject) obj;
 
         Assert.assertEquals("NDC is wrong", ndcData, jsonObject.get("ndc"));
+    }
+    
+    @Test
+    public void testJSONEventLayoutHasMDC() {
+        MDC.put("foo", "bar");
+        logger.warn("I should have MDC data in my log");
+        String message = appender.getMessages()[0];
+        Object obj = JSONValue.parse(message);
+        JSONObject jsonObject = (JSONObject) obj;
+        JSONObject expected = new JSONObject();
+        expected.put("foo", "bar");
+        Assert.assertEquals("MDC is wrong", expected, jsonObject.get("mdc"));
     }
 
     @Test
