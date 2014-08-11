@@ -1,6 +1,7 @@
-# Logstash `json_event` pattern for log4j
+# Info about this fork
+This fork is a stripped down version of the original library to fit into JBoss EPP 5.1 which includes log4j 1.2.14 only.
 
-[![Build Status](https://travis-ci.org/lusis/log4j-jsonevent-layout.png)](https://travis-ci.org/lusis/log4j-jsonevent-layout)
+# Logstash `json_event` pattern for log4j
 
 ## What is it?
 If you've used log4j, you know that certain appenders support things called _"Layouts"_. These are basically ways for you to control the formatting/rendering of a log event.
