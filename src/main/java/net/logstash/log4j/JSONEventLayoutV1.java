@@ -162,11 +162,14 @@ public class JSONEventLayoutV1 extends Layout {
         return logstashEvent.toString() + "\n";
     }
 
-    private String join(String[] throwableStrRep, String string) {
+    private String join(String[] throwableStrRep, String separator) {
     	StringBuilder builder = new StringBuilder();
-		for (String line : throwableStrRep) {
+    	for (int i = 0; i < throwableStrRep.length; i++) {
+			String line = throwableStrRep[i];
 			builder.append(line);
-			builder.append(string);
+			if(i == throwableStrRep.length-1){
+				builder.append(separator);
+			}
 		}
 		return builder.toString();
 	}
